@@ -3,18 +3,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: auto-paint-pro-app
+    container_name: officina_app
     ports:
        - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
     environment:
       - NODE_ENV=development
     volumes:
+      # - .:/app
+      - ./logs:/app/logs
       - ./data:/app/data
       - /app/node_modules
     restart: unless-stopped
     networks:
-      - auto-paint-network
+      - officina_app-network
       
 networks:
-  auto-paint-network:
+  officina_app-network:
     driver: bridge
+
+volumes:
+  nginx-logs:
+    driver: local
