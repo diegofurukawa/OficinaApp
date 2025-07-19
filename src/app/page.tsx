@@ -32,7 +32,7 @@ export default function HomePage() {
     }));
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -40,7 +40,7 @@ export default function HomePage() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -61,9 +61,11 @@ export default function HomePage() {
       router.push('/monitor');
       
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erro desconhecido ao salvar veículo');
+      }
     }
   };
 
