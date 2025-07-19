@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react';
 import StatsCards from '@/components/StatsCards';
 import FilterBar from '@/components/FilterBar';
 import VehicleModal from '@/components/VehicleModal';
+import { Veiculo } from '@/types/veiculo';
+import { StatusCor } from '@/types/statusCor';
 
 export default function AcompanhamentoPage() {
-  const [veiculos, setVeiculos] = useState([]);
+  // const [veiculos, setVeiculos] = useState([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,7 +92,7 @@ export default function AcompanhamentoPage() {
     return data.toLocaleDateString('pt-BR');
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: StatusCor) => {
     switch (status) {
       case 'verde': return 'bg-green-500';
       case 'amarelo': return 'bg-yellow-500';
@@ -98,23 +101,6 @@ export default function AcompanhamentoPage() {
       default: return 'bg-gray-300';
     }
   };
-
-  type Veiculo = {
-    placa: string;
-    modelo: string;
-    ano: number;
-    cor: string;
-    cliente: string;
-    sinistro?: string;
-    data_entrada: string;
-    previsao_entrega: string;
-    pintura_finalizada: boolean;
-    pecas_disponiveis: boolean;
-    tinta_acertada: boolean;
-    em_pintura: boolean;
-    tipo: 'particular' | 'seguradora';
-  };
-
 
   // Nova função para determinar estado geral do veículo
   const getEstadoGeral = (veiculo: Veiculo) => {
@@ -151,7 +137,16 @@ export default function AcompanhamentoPage() {
   };
 
   // Função atualizada para status individual (nova ordem)
-  const getVeiculoStatus = (veiculo: Veiculo) => ({
+    const getVeiculoStatus = (veiculo: Veiculo): {
+      statusPecas: StatusCor;
+      statusTinta: StatusCor;
+      statusPintura: StatusCor;
+      statusFinalizada: StatusCor;
+      textoPecas: string;
+      textoTinta: string;
+      textoPintura: string;
+      textoFinalizada: string;
+    } => ({
     // 1. Todas as peças disponíveis
     statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
     textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',

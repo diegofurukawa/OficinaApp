@@ -5,9 +5,12 @@ import Link from 'next/link';
 import FilterBar from '@/components/FilterBar';
 import StatsCards from '@/components/StatsCards';
 import VehicleModal from '@/components/VehicleModal';
+import { Veiculo } from '@/types/veiculo';
+import { StatusCor } from '@/types/statusCor';
 
 export default function MonitorPage() {
-  const [veiculos, setVeiculos] = useState([]);
+  // const [veiculos, setVeiculos] = useState([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,7 +80,7 @@ export default function MonitorPage() {
     setModalOpen(true);
   };
 
-  const handleEditVeiculo = async (placa) => {
+  const handleEditVeiculo = async (placa: string) => {
     try {
       const response = await fetch(`/api/veiculos/${placa}`);
       if (!response.ok) throw new Error('Erro ao buscar veículo');
@@ -91,7 +94,7 @@ export default function MonitorPage() {
     }
   };
 
-  const handleViewDetails = async (placa) => {
+  const handleViewDetails = async (placa: string) => {
     try {
       const response = await fetch(`/api/veiculos/${placa}`);
       if (!response.ok) throw new Error('Erro ao buscar veículo');
@@ -105,7 +108,7 @@ export default function MonitorPage() {
     }
   };
 
-  const handleSaveVeiculo = async (formData) => {
+  const handleSaveVeiculo = async (formData: Veiculo) => {
     try {
       const url = modalMode === 'create' 
         ? '/api/veiculos' 
@@ -128,17 +131,21 @@ export default function MonitorPage() {
       setModalOpen(false);
       
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erro desconhecido ao salvar veículo');
+      }
     }
   };
 
-  const formatarData = (dataString) => {
+  const formatarData = (dataString: string) => {
     if (!dataString) return '';
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: StatusCor) => {
     switch (status) {
       case 'verde': return 'bg-green-500';
       case 'amarelo': return 'bg-yellow-500';
@@ -149,7 +156,7 @@ export default function MonitorPage() {
   };
 
   // Nova função para determinar estado geral do veículo
-  const getEstadoGeral = (veiculo) => {
+  const getEstadoGeral = (veiculo: Veiculo) => {
     // CONCLUÍDO: Pintura finalizada + Peças disponíveis
     if (veiculo.pintura_finalizada && veiculo.pecas_disponiveis) {
       return {
@@ -183,7 +190,16 @@ export default function MonitorPage() {
   };
 
   // Função atualizada para status individual (nova ordem)
-  const getVeiculoStatus = (veiculo) => ({
+    const getVeiculoStatus = (veiculo: Veiculo): {
+      statusPecas: StatusCor;
+      statusTinta: StatusCor;
+      statusPintura: StatusCor;
+      statusFinalizada: StatusCor;
+      textoPecas: string;
+      textoTinta: string;
+      textoPintura: string;
+      textoFinalizada: string;
+    } => ({
     // 1. Todas as peças disponíveis
     statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
     textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',
