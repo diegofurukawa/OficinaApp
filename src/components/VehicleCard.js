@@ -15,32 +15,87 @@ export default function VehicleCard({
     switch (status) {
       case 'verde': return 'bg-green-500';
       case 'amarelo': return 'bg-yellow-500';
+      case 'azul': return 'bg-blue-500';
       case 'vermelho': return 'bg-red-500';
       default: return 'bg-gray-300';
     }
   };
 
+  // Nova função para determinar estado geral do veículo
+  const getEstadoGeral = (veiculo) => {
+    // CONCLUÍDO: Pintura finalizada + Peças disponíveis
+    if (veiculo.pintura_finalizada && veiculo.pecas_disponiveis) {
+      return {
+        estado: 'concluido',
+        cor: 'from-green-600 to-green-800',
+        bgBadge: 'bg-green-200',
+        textBadge: 'text-green-800',
+        iconColor: 'text-green-600'
+      };
+    }
+    
+    // EM ANDAMENTO: Peças OK + Tinta OK + Em pintura
+    if (veiculo.pecas_disponiveis && veiculo.tinta_acertada && veiculo.em_pintura) {
+      return {
+        estado: 'andamento',
+        cor: 'from-blue-600 to-blue-800',
+        bgBadge: 'bg-blue-200',
+        textBadge: 'text-blue-800',
+        iconColor: 'text-blue-600'
+      };
+    }
+    
+    // PENDENTE: Qualquer item em falta
+    return {
+      estado: 'pendente',
+      cor: 'from-yellow-500 to-yellow-700',
+      bgBadge: 'bg-yellow-200',
+      textBadge: 'text-yellow-800',
+      iconColor: 'text-yellow-600'
+    };
+  };
+
+  // Função atualizada para status individual (nova ordem)
+  const getVeiculoStatus = (veiculo) => ({
+    // 1. Todas as peças disponíveis
+    statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
+    textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',
+    
+    // 2. Tinta acertada
+    statusTinta: veiculo.tinta_acertada ? 'amarelo' : 'vermelho',
+    textoTinta: veiculo.tinta_acertada ? 'Tinta Acertada' : 'Aguardando Acerto de Tinta',
+    
+    // 3. Em pintura
+    statusPintura: veiculo.em_pintura ? 'azul' : 'cinza',
+    textoPintura: veiculo.em_pintura ? 'Em Pintura' : 'Pintura Não Iniciada',
+    
+    // 4. Pintura finalizada
+    statusFinalizada: veiculo.pintura_finalizada ? 'verde' : 'cinza',
+    textoFinalizada: veiculo.pintura_finalizada ? 'Pintura Finalizada' : 'Pintura Não Concluída'
+  });
+
+  const estadoGeral = getEstadoGeral(veiculo);
+  const status = getVeiculoStatus(veiculo);
+
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 card-hover">
-      {/* Header Colorido com Gradiente */}
-      <div className={`${
-        isSeguradora 
-          ? 'bg-gradient-to-r from-blue-600 to-blue-800' 
-          : 'bg-gradient-to-r from-green-600 to-green-800'
-      } px-6 py-4 flex justify-between items-center`}>
+      {/* Header Colorido baseado no estado geral */}
+      <div className={`bg-gradient-to-r ${estadoGeral.cor} px-6 py-4 flex justify-between items-center`}>
         <div>
-          <h3 className="text-white font-bold text-lg">{veiculo.placa}</h3>
-          <span className={`inline-block ${
-            isSeguradora 
-              ? 'bg-blue-200 text-blue-800' 
-              : 'bg-green-200 text-green-800'
-          } text-xs px-2 py-1 rounded-full font-semibold mt-1`}>
-            {isSeguradora ? 'Seguradora' : 'Particular'}
-          </span>
+                            <h3 className="text-white font-bold text-lg uppercase">{veiculo.placa}</h3>
+          <div className="flex gap-2 mt-1">
+            <span className={`inline-block ${isSeguradora ? 'bg-white text-gray-800' : 'bg-white text-gray-800'} text-xs px-2 py-1 rounded-full font-semibold`}>
+              {isSeguradora ? 'Seguradora' : 'Particular'}
+            </span>
+            <span className={`inline-block ${estadoGeral.bgBadge} ${estadoGeral.textBadge} text-xs px-2 py-1 rounded-full font-semibold`}>
+              {estadoGeral.estado === 'concluido' ? 'Concluído' : 
+               estadoGeral.estado === 'andamento' ? 'Em Andamento' : 'Pendente'}
+            </span>
+          </div>
         </div>
         <div className="bg-white rounded-full p-3 shadow-md">
           <svg xmlns="http://www.w3.org/2000/svg" 
-               className={`h-6 w-6 ${isSeguradora ? 'text-blue-600' : 'text-green-600'}`} 
+               className={`h-6 w-6 ${estadoGeral.iconColor}`} 
                fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
                   d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -54,12 +109,12 @@ export default function VehicleCard({
       <div className="p-6">
         <div className="mb-4">
           <h4 className="text-gray-500 text-sm font-medium">Veículo</h4>
-          <p className="text-gray-800 font-semibold text-lg">{veiculo.modelo} {veiculo.ano} - {veiculo.cor}</p>
+          <p className="text-gray-800 font-semibold text-lg uppercase">{veiculo.modelo} {veiculo.ano} - {veiculo.cor}</p>
         </div>
         
         <div className="mb-4">
           <h4 className="text-gray-500 text-sm font-medium">Cliente{isSeguradora ? '/Seguradora' : ''}</h4>
-          <p className="text-gray-800 font-medium">
+          <p className="text-gray-800 font-medium uppercase">
             {isSeguradora && veiculo.sinistro 
               ? `${veiculo.cliente} (Sinistro #${veiculo.sinistro})`
               : veiculo.cliente
@@ -70,27 +125,31 @@ export default function VehicleCard({
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
             <h4 className="text-gray-500 text-sm font-medium">Entrada</h4>
-            <p className="text-gray-800 font-semibold">{formatarData(veiculo.dataEntrada)}</p>
+            <p className="text-gray-800 font-semibold">{formatarData(veiculo.dataEntrada || veiculo.data_entrada)}</p>
           </div>
           <div>
             <h4 className="text-gray-500 text-sm font-medium">Previsão</h4>
-            <p className="text-gray-800 font-semibold">{formatarData(veiculo.previsao)}</p>
+            <p className="text-gray-800 font-semibold">{formatarData(veiculo.previsao || veiculo.previsao_entrega)}</p>
           </div>
         </div>
 
-        {/* Status com bolinhas coloridas */}
+        {/* Status em nova ordem */}
         <div className="space-y-3">
           <div className="flex items-center">
-            <div className={`w-4 h-4 rounded-full ${getStatusColor(veiculo.statusTinta)} mr-3 shadow-sm`}></div>
-            <span className="text-sm font-medium text-gray-700">{veiculo.textoTinta}</span>
+            <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusPecas)} mr-3 shadow-sm`}></div>
+            <span className="text-sm font-medium text-gray-700">{status.textoPecas}</span>
           </div>
           <div className="flex items-center">
-            <div className={`w-4 h-4 rounded-full ${getStatusColor(veiculo.statusPintura)} mr-3 shadow-sm`}></div>
-            <span className="text-sm font-medium text-gray-700">{veiculo.textoPintura}</span>
+            <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusTinta)} mr-3 shadow-sm`}></div>
+            <span className="text-sm font-medium text-gray-700">{status.textoTinta}</span>
           </div>
           <div className="flex items-center">
-            <div className={`w-4 h-4 rounded-full ${getStatusColor(veiculo.statusPecas)} mr-3 shadow-sm`}></div>
-            <span className="text-sm font-medium text-gray-700">{veiculo.textoPecas}</span>
+            <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusPintura)} mr-3 shadow-sm`}></div>
+            <span className="text-sm font-medium text-gray-700">{status.textoPintura}</span>
+          </div>
+          <div className="flex items-center">
+            <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusFinalizada)} mr-3 shadow-sm`}></div>
+            <span className="text-sm font-medium text-gray-700">{status.textoFinalizada}</span>
           </div>
         </div>
       </div>

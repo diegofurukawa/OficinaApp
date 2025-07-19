@@ -142,24 +142,64 @@ export default function MonitorPage() {
     switch (status) {
       case 'verde': return 'bg-green-500';
       case 'amarelo': return 'bg-yellow-500';
+      case 'azul': return 'bg-blue-500';
       case 'vermelho': return 'bg-red-500';
       default: return 'bg-gray-300';
     }
   };
 
-  const getVeiculoStatus = (veiculo) => ({
-    statusTinta: veiculo.tinta_acertada ? 'verde' : 'vermelho',
-    textoTinta: veiculo.tinta_acertada ? 'Tinta Acertada' : 'Aguardando Acerto de Tinta',
-    statusPintura: veiculo.pintura_finalizada ? 'verde' : veiculo.em_pintura ? 'amarelo' : 'cinza',
-    textoPintura: veiculo.pintura_finalizada ? 'Pintura Concluída' : veiculo.em_pintura ? 'Em Pintura' : 'Pintura Não Iniciada',
-    statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'vermelho',
-    textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças'
-  });
-
-  // Função para exibir texto em uppercase
-  const displayText = (text) => {
-    return text ? text.toUpperCase() : '';
+  // Nova função para determinar estado geral do veículo
+  const getEstadoGeral = (veiculo) => {
+    // CONCLUÍDO: Pintura finalizada + Peças disponíveis
+    if (veiculo.pintura_finalizada && veiculo.pecas_disponiveis) {
+      return {
+        estado: 'concluido',
+        cor: 'from-green-600 to-green-800',
+        bgBadge: 'bg-green-200',
+        textBadge: 'text-green-800',
+        iconColor: 'text-green-600'
+      };
+    }
+    
+    // EM ANDAMENTO: Peças OK + Tinta OK + Em pintura
+    if (veiculo.pecas_disponiveis && veiculo.tinta_acertada && veiculo.em_pintura) {
+      return {
+        estado: 'andamento',
+        cor: 'from-blue-600 to-blue-800',
+        bgBadge: 'bg-blue-200',
+        textBadge: 'text-blue-800',
+        iconColor: 'text-blue-600'
+      };
+    }
+    
+    // PENDENTE: Qualquer item em falta
+    return {
+      estado: 'pendente',
+      cor: 'from-yellow-500 to-yellow-700',
+      bgBadge: 'bg-yellow-200',
+      textBadge: 'text-yellow-800',
+      iconColor: 'text-yellow-600'
+    };
   };
+
+  // Função atualizada para status individual (nova ordem)
+  const getVeiculoStatus = (veiculo) => ({
+    // 1. Todas as peças disponíveis
+    statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
+    textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',
+    
+    // 2. Tinta acertada
+    statusTinta: veiculo.tinta_acertada ? 'amarelo' : 'vermelho',
+    textoTinta: veiculo.tinta_acertada ? 'Tinta Acertada' : 'Aguardando Acerto de Tinta',
+    
+    // 3. Em pintura
+    statusPintura: veiculo.em_pintura ? 'azul' : 'cinza',
+    textoPintura: veiculo.em_pintura ? 'Em Pintura' : 'Pintura Não Iniciada',
+    
+    // 4. Pintura finalizada
+    statusFinalizada: veiculo.pintura_finalizada ? 'verde' : 'cinza',
+    textoFinalizada: veiculo.pintura_finalizada ? 'Pintura Finalizada' : 'Pintura Não Concluída'
+  });
 
   if (loading && veiculos.length === 0) {
     return (
@@ -216,21 +256,28 @@ export default function MonitorPage() {
       {/* Lista de veículos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {veiculos.map((veiculo) => {
+          const estadoGeral = getEstadoGeral(veiculo);
           const status = getVeiculoStatus(veiculo);
           const isSeguradora = veiculo.tipo === 'seguradora';
           
           return (
             <div key={veiculo.placa} className="bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 card-hover">
-              {/* Header */}
-              <div className={`${isSeguradora ? 'bg-gradient-to-r from-blue-600 to-blue-800' : 'bg-gradient-to-r from-green-600 to-green-800'} px-6 py-4 flex justify-between items-center`}>
+              {/* Header baseado no estado geral */}
+              <div className={`bg-gradient-to-r ${estadoGeral.cor} px-6 py-4 flex justify-between items-center`}>
                 <div>
-                  <h3 className="text-white font-bold text-lg">{displayText(veiculo.placa)}</h3>
-                  <span className={`inline-block ${isSeguradora ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'} text-xs px-2 py-1 rounded-full font-semibold`}>
-                    {isSeguradora ? 'Seguradora' : 'Particular'}
-                  </span>
+                  <h3 className="text-white font-bold text-lg uppercase">{veiculo.placa}</h3>
+                  <div className="flex gap-2 mt-1">
+                    <span className="inline-block bg-white text-gray-800 text-xs px-2 py-1 rounded-full font-semibold">
+                      {isSeguradora ? 'Seguradora' : 'Particular'}
+                    </span>
+                    <span className={`inline-block ${estadoGeral.bgBadge} ${estadoGeral.textBadge} text-xs px-2 py-1 rounded-full font-semibold`}>
+                      {estadoGeral.estado === 'concluido' ? 'Concluído' : 
+                       estadoGeral.estado === 'andamento' ? 'Em Andamento' : 'Pendente'}
+                    </span>
+                  </div>
                 </div>
                 <div className="bg-white rounded-full p-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isSeguradora ? 'text-blue-600' : 'text-green-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${estadoGeral.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
                   </svg>
@@ -241,15 +288,15 @@ export default function MonitorPage() {
               <div className="p-6">
                 <div className="mb-4">
                   <h4 className="text-gray-500 text-sm">Veículo</h4>
-                  <p className="text-gray-800 font-medium">{displayText(veiculo.modelo)} {veiculo.ano} - {displayText(veiculo.cor)}</p>
+                  <p className="text-gray-800 font-medium uppercase">{veiculo.modelo} {veiculo.ano} - {veiculo.cor}</p>
                 </div>
                 
                 <div className="mb-4">
                   <h4 className="text-gray-500 text-sm">Cliente{isSeguradora ? '/Seguradora' : ''}</h4>
-                  <p className="text-gray-800 font-medium">
+                  <p className="text-gray-800 font-medium uppercase">
                     {isSeguradora && veiculo.sinistro 
-                      ? `${displayText(veiculo.cliente)} (Sinistro #${veiculo.sinistro})`
-                      : displayText(veiculo.cliente)
+                      ? `${veiculo.cliente} (Sinistro #${veiculo.sinistro})`
+                      : veiculo.cliente
                     }
                   </p>
                 </div>
@@ -265,8 +312,12 @@ export default function MonitorPage() {
                   </div>
                 </div>
 
-                {/* Status */}
+                {/* Status em nova ordem */}
                 <div className="space-y-3">
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusPecas)} mr-2`}></div>
+                    <span className="text-sm">{status.textoPecas}</span>
+                  </div>
                   <div className="flex items-center">
                     <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusTinta)} mr-2`}></div>
                     <span className="text-sm">{status.textoTinta}</span>
@@ -276,8 +327,8 @@ export default function MonitorPage() {
                     <span className="text-sm">{status.textoPintura}</span>
                   </div>
                   <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusPecas)} mr-2`}></div>
-                    <span className="text-sm">{status.textoPecas}</span>
+                    <div className={`w-4 h-4 rounded-full ${getStatusColor(status.statusFinalizada)} mr-2`}></div>
+                    <span className="text-sm">{status.textoFinalizada}</span>
                   </div>
                 </div>
               </div>

@@ -1,22 +1,24 @@
+# Dockerfile para desenvolvimento
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Instalar dependências do sistema
+# Instalar dependências do sistema para better-sqlite3
 RUN apk add --no-cache python3 make g++ libc6-compat
 
-# Copiar package.json
+# Copiar arquivos de configuração
 COPY package*.json ./
+COPY tsconfig.json ./
+COPY next.config.ts ./
 
 # Instalar dependências
 RUN npm install
 
-# Copiar código
-COPY . .
+# Criar diretório do banco
+# RUN mkdir -p /app/data
 
-# Criar diretório data
-RUN mkdir -p /app/data
+# Expor porta
+EXPOSE 3000
 
-EXPOSE 3002
-
+# Comando padrão
 CMD ["npm", "run", "dev"]

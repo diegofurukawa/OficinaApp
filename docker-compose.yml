@@ -3,24 +3,48 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: officina_app
+    container_name: auto-paint-pro-app
     ports:
-       - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
+      - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
+    volumes:
+      # Volume persistente para o banco SQLite
+      # - ./data:/app/data
+      # Para desenvolvimento - descomente para hot reload
+      # - .:/app
+      # - /app/node_modules
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - PORT="${EXTERNAL_PORT}"
+    restart: unless-stopped
+    networks:
+      - auto-paint-network
+
+  # Serviço opcional para desenvolvimento com hot reload
+  auto-paint-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: auto-paint-pro-dev
+    ports:
+      - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
     volumes:
       # - .:/app
       - ./logs:/app/logs
-      - ./data:/app/data
       - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT="${EXTERNAL_PORT}"
+    command: npm run dev
     restart: unless-stopped
     networks:
-      - officina_app-network
-      
+      - auto-paint-network
+    profiles:
+      - dev
+
 networks:
-  officina_app-network:
+  auto-paint-network:
     driver: bridge
 
 volumes:
-  nginx-logs:
+  auto_paint_data:
     driver: local
