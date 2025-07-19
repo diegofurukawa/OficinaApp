@@ -4,11 +4,6 @@ const nextConfig: NextConfig = {
   // Para Docker e Vercel
   output: 'standalone',
   
-  // Configurações de build
-  experimental: {
-    outputFileTracingRoot: undefined,
-  },
-  
   // Configurações do banco SQLite
   webpack: (config, { isServer }) => {
     if (isServer) {

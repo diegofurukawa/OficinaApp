@@ -91,7 +91,7 @@ export async function POST(request) {
     const observacoesLower = data.observacoes?.toLowerCase() || '';
     
     // Inserir veículo com campos corretos
-    const result = statements.insertVeiculo.run(
+    statements.insertVeiculo.run(
       placaLower,
       data.tipo,
       modeloLower,
