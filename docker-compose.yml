@@ -10,7 +10,7 @@ services:
       - "3002:3000"
     volumes:
       # Volume persistente para o banco SQLite
-      - auto_paint_data:/app/data
+      - ./data:/app/data
       # Para desenvolvimento - descomente para hot reload
       # - .:/app
       # - /app/node_modules
@@ -30,11 +30,9 @@ services:
     ports:
       - "3002:3000"
     volumes:
-      # Volume persistente para o banco SQLite
-      - auto_paint_data:/app/data
-      # Para desenvolvimento - descomente para hot reload
-      # - .:/app
-      # - /app/node_modules
+      - .:/app
+      - /app/node_modules
+      - ./data:/app/data
     environment:
       - NODE_ENV=development
       - PORT=3000
