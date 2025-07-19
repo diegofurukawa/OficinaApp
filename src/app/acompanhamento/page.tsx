@@ -151,7 +151,7 @@ export default function AcompanhamentoPage() {
   };
 
   // Função atualizada para status individual (nova ordem)
-  const getVeiculoStatus = (veiculo) => ({
+  const getVeiculoStatus = (veiculo: Veiculo) => ({
     // 1. Todas as peças disponíveis
     statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
     textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',
