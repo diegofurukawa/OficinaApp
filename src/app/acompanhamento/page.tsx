@@ -70,7 +70,7 @@ export default function AcompanhamentoPage() {
     }
   };
 
-  const handleViewDetails = async (placa) => {
+  const handleViewDetails = async (placa: string) => {
     try {
       const response = await fetch(`/api/veiculos/${placa}`);
       if (!response.ok) throw new Error('Erro ao buscar veículo');
@@ -83,13 +83,13 @@ export default function AcompanhamentoPage() {
     }
   };
 
-  const formatarData = (dataString) => {
+  const formatarData = (dataString: string) => {
     if (!dataString) return '';
     const data = new Date(dataString);
     return data.toLocaleDateString('pt-BR');
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'verde': return 'bg-green-500';
       case 'amarelo': return 'bg-yellow-500';
