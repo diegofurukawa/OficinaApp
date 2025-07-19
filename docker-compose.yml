@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: auto-paint-pro-app
     ports:
-      - "3002:3002"
+      - "3002:3000"
     volumes:
       # Volume persistente para o banco SQLite
       - auto_paint_data:/app/data
@@ -16,7 +16,7 @@ services:
       # - /app/node_modules
     environment:
       - NODE_ENV=production
-      - PORT=3002
+      - PORT=3000
     restart: unless-stopped
     networks:
       - auto-paint-network
@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: auto-paint-pro-dev
     ports:
-      - "3002:3002"
+      - "3002:3000"
     volumes:
       # Volume persistente para o banco SQLite
       - auto_paint_data:/app/data
@@ -37,7 +37,7 @@ services:
       # - /app/node_modules
     environment:
       - NODE_ENV=development
-      - PORT=3002
+      - PORT=3000
     command: npm run dev
     restart: unless-stopped
     networks:
