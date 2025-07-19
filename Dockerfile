@@ -18,7 +18,7 @@ RUN npm install
 RUN mkdir -p /app/data
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 3002
 
 # Comando padrão
 CMD ["npm", "run", "dev"]
