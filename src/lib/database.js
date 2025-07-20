@@ -1,4 +1,4 @@
-// src/lib/database.js - Versão Turso
+// src/lib/database.js - Versão Turso com Filtro Inteligente
 import { createClient } from '@libsql/client';
 
 let db = null;
@@ -45,6 +45,7 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_veiculos_tipo ON veiculos(tipo);
     CREATE INDEX IF NOT EXISTS idx_veiculos_data_entrada ON veiculos(data_entrada);
     CREATE INDEX IF NOT EXISTS idx_veiculos_status ON veiculos(tinta_acertada, em_pintura, pintura_finalizada, pecas_disponiveis);
+    CREATE INDEX IF NOT EXISTS idx_veiculos_finalizados ON veiculos(pintura_finalizada, pecas_disponiveis);
   `;
   
   await db.executeMultiple(createTableQuery + '; ' + createIndexQuery);
@@ -73,6 +74,18 @@ export function getStatements() {
     selectAllVeiculos: {
       all: async () => {
         const result = await database.execute('SELECT * FROM veiculos ORDER BY data_entrada DESC');
+        return result.rows;
+      }
+    },
+    
+    // NOVA: Buscar apenas pendentes/em andamento por padrão
+    selectVeiculosAtivos: {
+      all: async () => {
+        const result = await database.execute(`
+          SELECT * FROM veiculos 
+          WHERE NOT (pintura_finalizada = 1 AND pecas_disponiveis = 1)
+          ORDER BY data_entrada DESC
+        `);
         return result.rows;
       }
     },
@@ -127,6 +140,22 @@ export function getStatements() {
       }
     },
     
+    // NOVA: Stats apenas dos ativos (pendentes/em andamento)
+    getStatsAtivos: {
+      get: async () => {
+        const result = await database.execute(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN NOT pecas_disponiveis THEN 1 ELSE 0 END) as aguardando_pecas,
+            SUM(CASE WHEN em_pintura AND NOT pintura_finalizada THEN 1 ELSE 0 END) as em_pintura,
+            SUM(CASE WHEN pintura_finalizada AND pecas_disponiveis THEN 1 ELSE 0 END) as finalizados
+          FROM veiculos
+          WHERE NOT (pintura_finalizada = 1 AND pecas_disponiveis = 1)
+        `);
+        return result.rows[0];
+      }
+    },
+    
     getFinalizadosMes: {
       get: async () => {
         const result = await database.execute(`
@@ -140,28 +169,38 @@ export function getStatements() {
       }
     },
     
-    // Filtros expandidos
+    // ATUALIZADA: Filtros expandidos com opção de incluir finalizados
     searchVeiculos: {
       all: async (...params) => {
+        const incluirFinalizados = params[12]; // Novo parâmetro (13º total)
+        
+        let baseQuery = `SELECT * FROM veiculos 
+        WHERE (
+          ? = '' OR 
+          placa LIKE ? OR 
+          cliente LIKE ? OR 
+          modelo LIKE ? OR 
+          (sinistro IS NOT NULL AND sinistro LIKE ?)
+        )
+        AND (? = '' OR tipo = ?)
+        AND (
+          ? = '' OR
+          (? = 'aguardando_tinta' AND tinta_acertada = FALSE) OR
+          (? = 'aguardando_pecas' AND pecas_disponiveis = FALSE) OR
+          (? = 'em_pintura' AND em_pintura = TRUE AND pintura_finalizada = FALSE) OR
+          (? = 'finalizado' AND pintura_finalizada = TRUE AND pecas_disponiveis = TRUE)
+        )`;
+        
+        // Se não incluir finalizados, filtrar apenas ativos
+        if (!incluirFinalizados) {
+          baseQuery += ` AND NOT (pintura_finalizada = 1 AND pecas_disponiveis = 1)`;
+        }
+        
+        baseQuery += ` ORDER BY data_entrada DESC`;
+        
         const result = await database.execute({
-          sql: `SELECT * FROM veiculos 
-          WHERE (
-            ? = '' OR 
-            placa LIKE ? OR 
-            cliente LIKE ? OR 
-            modelo LIKE ? OR 
-            (sinistro IS NOT NULL AND sinistro LIKE ?)
-          )
-          AND (? = '' OR tipo = ?)
-          AND (
-            ? = '' OR
-            (? = 'aguardando_tinta' AND tinta_acertada = FALSE) OR
-            (? = 'aguardando_pecas' AND pecas_disponiveis = FALSE) OR
-            (? = 'em_pintura' AND em_pintura = TRUE AND pintura_finalizada = FALSE) OR
-            (? = 'finalizado' AND pintura_finalizada = TRUE AND pecas_disponiveis = TRUE)
-          )
-          ORDER BY data_entrada DESC`,
-          args: params
+          sql: baseQuery,
+          args: params.slice(0, 12) // Usar apenas os 12 primeiros parâmetros para a query
         });
         return result.rows;
       }

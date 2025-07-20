@@ -8,7 +8,6 @@ import { Veiculo } from '@/types/veiculo';
 import { StatusCor } from '@/types/statusCor';
 
 export default function AcompanhamentoPage() {
-  // const [veiculos, setVeiculos] = useState([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,6 +17,7 @@ export default function AcompanhamentoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [incluirFinalizados, setIncluirFinalizados] = useState(false);
 
   // Estados do modal (apenas visualização)
   const [modalOpen, setModalOpen] = useState(false);
@@ -25,12 +25,37 @@ export default function AcompanhamentoPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [incluirFinalizados]);
+
+  // NOVA FUNÇÃO: Calcular stats locais dos veículos filtrados
+  const calculateLocalStats = (veiculosList: Veiculo[]) => {
+    const total = veiculosList.length;
+    const aguardandoPecas = veiculosList.filter(v => !v.pecas_disponiveis).length;
+    const emPintura = veiculosList.filter(v => v.em_pintura && !v.pintura_finalizada).length;
+    const finalizados = veiculosList.filter(v => v.pintura_finalizada && v.pecas_disponiveis).length;
+    
+    // Finalizados do mês atual
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const finalizadosMes = veiculosList.filter(v => {
+      if (!v.pintura_finalizada || !v.pecas_disponiveis) return false;
+      const dataEntrada = new Date(v.data_entrada);
+      return dataEntrada >= inicioMes;
+    }).length;
+
+    return {
+      total,
+      aguardandoPecas,
+      emPintura,
+      finalizados,
+      finalizadosMes
+    };
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
-      await Promise.all([loadVeiculos(), loadStats()]);
+      await loadVeiculos();
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -40,17 +65,17 @@ export default function AcompanhamentoPage() {
   };
 
   const loadVeiculos = async () => {
-    const response = await fetch('/api/veiculos');
+    const params = new URLSearchParams();
+    if (incluirFinalizados) params.append('incluirFinalizados', 'true');
+    
+    const response = await fetch(`/api/veiculos?${params}`);
     if (!response.ok) throw new Error('Erro ao carregar veículos');
     const data = await response.json();
     setVeiculos(data);
-  };
-
-  const loadStats = async () => {
-    const response = await fetch('/api/stats');
-    if (!response.ok) throw new Error('Erro ao carregar estatísticas');
-    const data = await response.json();
-    setStats(data);
+    
+    // Calcular stats locais
+    const localStats = calculateLocalStats(data);
+    setStats(localStats);
   };
 
   const filtrarVeiculos = async () => {
@@ -60,12 +85,17 @@ export default function AcompanhamentoPage() {
       if (searchTerm) params.append('search', searchTerm);
       if (filterTipo) params.append('tipo', filterTipo);
       if (filterStatus) params.append('status', filterStatus);
+      if (incluirFinalizados) params.append('incluirFinalizados', 'true');
       
       const response = await fetch(`/api/veiculos?${params}`);
       if (!response.ok) throw new Error('Erro ao filtrar');
       
       const data = await response.json();
       setVeiculos(data);
+      
+      // RECALCULAR STATS dos veículos filtrados
+      const localStats = calculateLocalStats(data);
+      setStats(localStats);
     } catch (err) {
       setError('Erro ao filtrar veículos');
     } finally {
@@ -137,16 +167,16 @@ export default function AcompanhamentoPage() {
   };
 
   // Função atualizada para status individual (nova ordem)
-    const getVeiculoStatus = (veiculo: Veiculo): {
-      statusPecas: StatusCor;
-      statusTinta: StatusCor;
-      statusPintura: StatusCor;
-      statusFinalizada: StatusCor;
-      textoPecas: string;
-      textoTinta: string;
-      textoPintura: string;
-      textoFinalizada: string;
-    } => ({
+  const getVeiculoStatus = (veiculo: Veiculo): {
+    statusPecas: StatusCor;
+    statusTinta: StatusCor;
+    statusPintura: StatusCor;
+    statusFinalizada: StatusCor;
+    textoPecas: string;
+    textoTinta: string;
+    textoPintura: string;
+    textoFinalizada: string;
+  } => ({
     // 1. Todas as peças disponíveis
     statusPecas: veiculo.pecas_disponiveis ? 'verde' : 'amarelo',
     textoPecas: veiculo.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças',
@@ -196,14 +226,23 @@ export default function AcompanhamentoPage() {
         setFilterTipo={setFilterTipo}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
+        incluirFinalizados={incluirFinalizados}
+        setIncluirFinalizados={setIncluirFinalizados}
         onFilter={filtrarVeiculos}
       />
 
-      {/* Estatísticas */}
+      {/* Estatísticas - agora são locais (filtradas) */}
       <StatsCards stats={stats} />
 
       {/* Cabeçalho */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Acompanhamento de Veículos</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Acompanhamento de Veículos
+        {!incluirFinalizados && (
+          <span className="text-sm font-normal text-gray-500 ml-2">
+            (apenas pendentes e em andamento)
+          </span>
+        )}
+      </h2>
 
       {/* Lista de veículos - versão read-only */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -308,8 +347,15 @@ export default function AcompanhamentoPage() {
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum veículo encontrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Não há veículos cadastrados no momento.</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {incluirFinalizados ? 'Nenhum veículo encontrado' : 'Nenhum veículo pendente'}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {incluirFinalizados 
+              ? 'Não há veículos cadastrados no momento.' 
+              : 'Ative "Incluir Finalizados" para ver todos os veículos.'
+            }
+          </p>
         </div>
       )}
 

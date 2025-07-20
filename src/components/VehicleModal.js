@@ -65,6 +65,57 @@ export default function VehicleModal({
     }
   }, [veiculo, mode]);
 
+  // NOVA FUNÇÃO: Status em Cascata
+  const updateCascadeStatus = (field, checked, currentData) => {
+    let newData = { ...currentData, [field]: checked };
+    
+    // Ordem lógica: pecas_disponiveis → tinta_acertada → em_pintura → pintura_finalizada
+    
+    if (field === 'pecas_disponiveis' && checked) {
+      // Se marcar peças, automaticamente marcar tinta
+      newData.tinta_acertada = true;
+    }
+    
+    if (field === 'tinta_acertada' && checked) {
+      // Se marcar tinta, automaticamente marcar peças
+      newData.pecas_disponiveis = true;
+    }
+    
+    if (field === 'em_pintura' && checked) {
+      // Se marcar em pintura, automaticamente marcar tinta e peças
+      newData.pecas_disponiveis = true;
+      newData.tinta_acertada = true;
+    }
+    
+    if (field === 'pintura_finalizada' && checked) {
+      // Se marcar finalizada, automaticamente marcar todos anteriores
+      newData.pecas_disponiveis = true;
+      newData.tinta_acertada = true;
+      newData.em_pintura = true;
+    }
+    
+    // Lógica reversa: ao desmarcar, desmarcar posteriores
+    if (field === 'pecas_disponiveis' && !checked) {
+      // Se desmarcar peças, desmarcar tinta, pintura e finalizada
+      newData.tinta_acertada = false;
+      newData.em_pintura = false;
+      newData.pintura_finalizada = false;
+    }
+    
+    if (field === 'tinta_acertada' && !checked) {
+      // Se desmarcar tinta, desmarcar pintura e finalizada
+      newData.em_pintura = false;
+      newData.pintura_finalizada = false;
+    }
+    
+    if (field === 'em_pintura' && !checked) {
+      // Se desmarcar em pintura, desmarcar finalizada
+      newData.pintura_finalizada = false;
+    }
+    
+    return newData;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
@@ -72,10 +123,18 @@ export default function VehicleModal({
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    if (type === 'checkbox' && ['tinta_acertada', 'em_pintura', 'pintura_finalizada', 'pecas_disponiveis'].includes(name)) {
+      // Aplicar lógica cascata para status
+      const newFormData = updateCascadeStatus(name, checked, formData);
+      setFormData(newFormData);
+    } else {
+      // Para outros campos, comportamento normal
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
   };
 
   const getModalTitle = () => {
@@ -159,6 +218,10 @@ export default function VehicleModal({
                 <h4 className="text-gray-700 font-medium mb-3">Status Atual</h4>
                 <div className="space-y-3">
                   <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${formData.pecas_disponiveis ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                    <span className="text-sm">{formData.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças'}</span>
+                  </div>
+                  <div className="flex items-center">
                     <div className={`w-4 h-4 rounded-full ${formData.tinta_acertada ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
                     <span className="text-sm">{formData.tinta_acertada ? 'Tinta Acertada' : 'Aguardando Acerto de Tinta'}</span>
                   </div>
@@ -167,10 +230,6 @@ export default function VehicleModal({
                     <span className="text-sm">
                       {formData.pintura_finalizada ? 'Pintura Concluída' : formData.em_pintura ? 'Em Pintura' : 'Pintura Não Iniciada'}
                     </span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full ${formData.pecas_disponiveis ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
-                    <span className="text-sm">{formData.pecas_disponiveis ? 'Todas as Peças Disponíveis' : 'Aguardando Peças'}</span>
                   </div>
                 </div>
               </div>
@@ -295,51 +354,57 @@ export default function VehicleModal({
               </div>
 
               <div className="mb-6">
-                <h4 className="text-gray-700 font-medium mb-3">Status</h4>
+                <h4 className="text-gray-700 font-medium mb-3">Status - Ordem Lógica</h4>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-700">
+                    <strong>Cascata Automática:</strong> Ao marcar um status, os anteriores serão marcados automaticamente. 
+                    Ao desmarcar, os posteriores serão desmarcados.
+                  </p>
+                </div>
                 <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="tinta_acertada"
-                      name="tinta_acertada"
-                      checked={formData.tinta_acertada}
-                      onChange={handleChange}
-                      className="mr-2"
-                    />
-                    <label htmlFor="tinta_acertada">Tinta acertada</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="em_pintura"
-                      name="em_pintura"
-                      checked={formData.em_pintura}
-                      onChange={handleChange}
-                      className="mr-2"
-                    />
-                    <label htmlFor="em_pintura">Em pintura</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="pintura_finalizada"
-                      name="pintura_finalizada"
-                      checked={formData.pintura_finalizada}
-                      onChange={handleChange}
-                      className="mr-2"
-                    />
-                    <label htmlFor="pintura_finalizada">Pintura finalizada</label>
-                  </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                     <input
                       type="checkbox"
                       id="pecas_disponiveis"
                       name="pecas_disponiveis"
                       checked={formData.pecas_disponiveis}
                       onChange={handleChange}
-                      className="mr-2"
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor="pecas_disponiveis">Todas as peças disponíveis</label>
+                    <label htmlFor="pecas_disponiveis" className="font-medium">1. Todas as peças disponíveis</label>
+                  </div>
+                  <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="tinta_acertada"
+                      name="tinta_acertada"
+                      checked={formData.tinta_acertada}
+                      onChange={handleChange}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="tinta_acertada" className="font-medium">2. Tinta acertada</label>
+                  </div>
+                  <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="em_pintura"
+                      name="em_pintura"
+                      checked={formData.em_pintura}
+                      onChange={handleChange}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="em_pintura" className="font-medium">3. Em pintura</label>
+                  </div>
+                  <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="pintura_finalizada"
+                      name="pintura_finalizada"
+                      checked={formData.pintura_finalizada}
+                      onChange={handleChange}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="pintura_finalizada" className="font-medium">4. Pintura finalizada</label>
                   </div>
                 </div>
               </div>
