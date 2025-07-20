@@ -1,4 +1,4 @@
-// src/app/api/veiculos/route.js
+// src/app/api/veiculos/route.js - Versão Turso
 import { getStatements } from '@/lib/database';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +14,7 @@ export async function GET(request) {
     
     // Sempre usar searchVeiculos para consistência
     const searchTerm = `%${search}%`;
-    const veiculos = statements.searchVeiculos.all(
+    const veiculos = await statements.searchVeiculos.all(
       search,     // Parâmetro 1: check se search é vazio
       searchTerm, // Parâmetro 2: busca em placa
       searchTerm, // Parâmetro 3: busca em cliente  
@@ -75,7 +75,8 @@ export async function POST(request) {
     const statements = getStatements();
     
     // Verificar se placa já existe
-    const existing = statements.selectVeiculoByPlaca.get(data.placa?.toLowerCase());
+    const placaLower = data.placa?.toLowerCase() || '';
+    const existing = await statements.selectVeiculoByPlaca.get(placaLower);
     if (existing) {
       return NextResponse.json(
         { error: 'Placa já cadastrada' },
@@ -84,14 +85,13 @@ export async function POST(request) {
     }
     
     // Converter campos para lowercase
-    const placaLower = data.placa?.toLowerCase() || '';
     const modeloLower = data.modelo?.toLowerCase() || '';
     const corLower = data.cor?.toLowerCase() || '';
     const clienteLower = data.cliente?.toLowerCase() || '';
     const observacoesLower = data.observacoes?.toLowerCase() || '';
     
     // Inserir veículo com campos corretos
-    statements.insertVeiculo.run(
+    await statements.insertVeiculo.run(
       placaLower,
       data.tipo,
       modeloLower,
@@ -109,13 +109,13 @@ export async function POST(request) {
     );
     
     // Buscar veículo criado
-    const novoVeiculo = statements.selectVeiculoByPlaca.get(placaLower);
+    const novoVeiculo = await statements.selectVeiculoByPlaca.get(placaLower);
     
     return NextResponse.json(novoVeiculo, { status: 201 });
   } catch (error) {
     console.error('Erro ao criar veículo:', error);
     
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (error.message?.includes('UNIQUE constraint failed')) {
       return NextResponse.json(
         { error: 'Placa já cadastrada' },
         { status: 409 }

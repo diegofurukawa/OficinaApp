@@ -1,4 +1,4 @@
-// src/app/api/stats/route.js
+// src/app/api/stats/route.js - Versão Turso
 import { getStatements } from '@/lib/database';
 import { NextResponse } from 'next/server';
 
@@ -8,10 +8,10 @@ export async function GET() {
     const statements = getStatements();
     
     // Buscar estatísticas principais
-    const stats = statements.getStats.get();
+    const stats = await statements.getStats.get();
     
     // Buscar finalizados do mês
-    const finalizadosMes = statements.getFinalizadosMes.get();
+    const finalizadosMes = await statements.getFinalizadosMes.get();
     
     const result = {
       total: stats.total || 0,

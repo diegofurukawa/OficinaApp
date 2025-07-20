@@ -1,4 +1,4 @@
-// src/app/api/veiculos/[placa]/route.js
+// src/app/api/veiculos/[placa]/route.js - Versão Turso
 import { getStatements } from '@/lib/database';
 import { NextResponse } from 'next/server';
 
@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
     const statements = getStatements();
     
     // Buscar com placa em lowercase
-    const veiculo = statements.selectVeiculoByPlaca.get(placa.toLowerCase());
+    const veiculo = await statements.selectVeiculoByPlaca.get(placa.toLowerCase());
     
     if (!veiculo) {
       return NextResponse.json(
@@ -47,7 +47,7 @@ export async function PUT(request, { params }) {
     const placaLower = placa.toLowerCase();
     
     // Verificar se veículo existe
-    const existing = statements.selectVeiculoByPlaca.get(placaLower);
+    const existing = await statements.selectVeiculoByPlaca.get(placaLower);
     if (!existing) {
       return NextResponse.json(
         { error: 'Veículo não encontrado' },
@@ -81,7 +81,7 @@ export async function PUT(request, { params }) {
     const observacoesLower = data.observacoes?.toLowerCase() || '';
     
     // Atualizar veículo com campos corretos
-    const result = statements.updateVeiculo.run(
+    const result = await statements.updateVeiculo.run(
       data.tipo,
       modeloLower,
       data.ano,
@@ -105,7 +105,7 @@ export async function PUT(request, { params }) {
     }
     
     // Retornar veículo atualizado
-    const veiculoAtualizado = statements.selectVeiculoByPlaca.get(placaLower);
+    const veiculoAtualizado = await statements.selectVeiculoByPlaca.get(placaLower);
     
     return NextResponse.json({
       ...veiculoAtualizado,
@@ -132,7 +132,7 @@ export async function DELETE(request, { params }) {
     const placaLower = placa.toLowerCase();
     
     // Verificar se veículo existe
-    const existing = statements.selectVeiculoByPlaca.get(placaLower);
+    const existing = await statements.selectVeiculoByPlaca.get(placaLower);
     if (!existing) {
       return NextResponse.json(
         { error: 'Veículo não encontrado' },
@@ -141,7 +141,7 @@ export async function DELETE(request, { params }) {
     }
     
     // Deletar veículo
-    const result = statements.deleteVeiculo.run(placaLower);
+    const result = await statements.deleteVeiculo.run(placaLower);
     
     if (result.changes === 0) {
       return NextResponse.json(

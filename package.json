@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.10",
     "better-sqlite3": "^12.2.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.525.0",
